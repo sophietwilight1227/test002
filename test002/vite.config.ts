@@ -24,6 +24,6 @@ export default defineConfig({
       },
     },
   },
-  base: '/pinia001/', //通常はこっち
+  base: '/test02/', //通常はこっち
   //base: '/',  //カスタムドメインを使うならこっち？
 })
