@@ -34,7 +34,7 @@ const getData = async () => {
       throw new Error(`レスポンスステータス: ${response.status}`);
     }
     const content = await response.blob()
-    const reader = new FileReader();
+    const reader: any = new FileReader();
     reader.onload = () => { setText(reader.result) }
     reader.readAsText(content, "euc-jp");
   } catch (error: any) {
@@ -166,7 +166,7 @@ const getResponse = (str: string) => {
 
 @font-face {
   font-family: 'Saitamaar';
-  src: url('@/assets/fonts/Saitamaar.ttf') format('truetype');
+  src: url('@/assets/font/Saitamaar.ttf') format('truetype');
 }
 @font-face {
   font-family: "UnicodeException";
