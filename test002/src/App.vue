@@ -52,7 +52,7 @@ const getUrl = () => {
 
 const getData = async () => {
   
-  const url = '/api/https://worker01.nanada0629.workers.dev';
+  const url = 'https://worker01.nanada0629.workers.dev/https://worker01.nanada0629.workers.dev';
   //const url = getUrl();
   console.log(url);
   try {
