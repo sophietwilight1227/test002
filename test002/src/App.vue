@@ -52,7 +52,7 @@ const getUrl = () => {
 
 const getData = async () => {
   
-  const url = 'https://worker01.nanada0629.workers.dev';
+  const url = '/api/https://worker01.nanada0629.workers.dev';
   //const url = getUrl();
   console.log(url);
   try {
@@ -60,9 +60,9 @@ const getData = async () => {
                             mode: 'cors',
                             method: "GET",
                             headers: {
-                              "Access-Control-Allow-Headers": "*",
-                              "Access-Control-Allow-Origin": "*",
-                              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+                              "Access-Control-Allow-Headers": "Content-Type",
+                              'Access-Control-Allow-Origin': "*",
+                              "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS",
                             }
                           });
     if (!response.ok) {
