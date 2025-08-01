@@ -18,7 +18,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://jbbs.shitaraba.net/bbs/rawmode.cgi',
+        target: 'https://jbbs.shitaraba.net/bbs/read.cgi',
         changeOrigin: true,
         //rewrite: (path) => path.replace(/^\/api/, ''),
         rewrite: (path) => path.replace("/api", '/'),
