@@ -54,7 +54,7 @@ const getData = async () => {
   const isProduction = import.meta.env.MODE === "production";
   const proxyUrl = isProduction
     ? "https://worker01.nanada0629.workers.dev" // 先ほど発行されたエンドポイント
-    : "http://localhost:5173/"; // 開発環境での Cloudflare Workers の（デフォルト）エンドポイント
+    :' /api/?url=https://worker01.nanada0629.workers.dev'; // 開発環境での Cloudflare Workers の（デフォルト）エンドポイント
   //const url = `${proxyUrl}?url=${encodeURIComponent("https://worker01.nanada0629.workers.dev")}`;
   //const url = `${proxyUrl}?url=${"https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/"}`;
   const url = '/api/?url=https://worker01.nanada0629.workers.dev';
@@ -63,7 +63,7 @@ const getData = async () => {
   
   console.log(url);
   try {
-    const response = await fetch(url, {
+    const response = await fetch(proxyUrl, {
                             mode: 'cors',
                             method: "GET",
                             headers: {
