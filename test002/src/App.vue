@@ -24,9 +24,10 @@ const getUrl = () => {
 const getData = async () => {
   //const url = "/api/internet/26196/1752676023/";
   const url = getUrl();
+  console.log(url);
   try {
     const response = await fetch(url, {
-                            mode: 'cors',
+                            mode: 'no-cors',
                             method: 'GET',
                             credentials: 'include' // 認証情報を含める設定
                           });
@@ -92,7 +93,6 @@ const getResponse = (str: string) => {
     const index = text[i].lastIndexOf("<a ");
     if( index >= 0){
       const msg = text[i].slice(index,)
-      console.log(msg);
       messages.push(msg)
       str = str.replace(msg, "");
     }else if(messages.length > 0){
