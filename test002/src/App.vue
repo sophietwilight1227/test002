@@ -74,7 +74,7 @@ const getData = async () => {
                           });
     if (!response.ok) {
       console.log(response)
-      throw new Error(`レスポンスステータス: ${response.status}`);
+      throw new Error(`レスポンスステータス : ${response.status}`);
     }
     const content = await response.blob()
     //const content = await response.text()
