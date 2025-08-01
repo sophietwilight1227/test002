@@ -51,7 +51,8 @@ const getUrl = () => {
 }
 
 const getData = async () => {
-  const url = '/api/internet/26196/1735542868/';
+  
+  const url = 'https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/';
   //const url = getUrl();
   console.log(url);
   try {
