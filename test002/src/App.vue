@@ -63,7 +63,7 @@ const getData = async () => {
   
   console.log(url);
   try {
-    const response = await fetch(proxyUrl, {
+    const response = await fetch("https://worker01.nanada0629.workers.dev", {
                             mode: 'cors',
                             method: "GET",
                             headers: {
