@@ -18,7 +18,7 @@ const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/interne
 const getUrl = () => {
   const text = rawUrl.value.split("/");
   console.log(text);
-  return "/api/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
+  return "https://jbbs.shitaraba.net/bbs/rawmode.cgi/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
 }
 
 const getData = async () => {
