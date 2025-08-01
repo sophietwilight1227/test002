@@ -15,9 +15,25 @@ const data: Array<{num: string,
 const masterList: Array<string> = reactive([]);
 const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/26196/1735542868/")
 
+const test = () => {
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", getUrl());
+  xhr.send();
+  xhr.responseType = "text";
+  xhr.onload = () => {
+    if (xhr.readyState == 4 && xhr.status == 200) {
+      const data = xhr.response;
+      setText(data);
+    } else {
+      console.log(`Error: ${xhr.status}`);
+    }
+  };
+}
+
 const getUrl = () => {
   const text = rawUrl.value.split("/");
   console.log(text);
+  //return "/api/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
   return "/api/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
 }
 
@@ -27,7 +43,7 @@ const getData = async () => {
   console.log(url);
   try {
     const response = await fetch(url, {
-                            mode: 'no-cors',
+                            mode: 'cors',
                             method: 'GET',
                             credentials: 'include' // 認証情報を含める設定
                           });
@@ -114,7 +130,7 @@ const getResponse = (str: string) => {
 <template>
   <div>読み込むスレを指定してください </div>
   <input type="text" v-model="rawUrl">
-  <button v-on:click="getData">表示</button>
+  <button v-on:click="test">表示</button>
   <div class="base">
     <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
       <div v-bind:class="{'master': info.isMaster}" class="node">
