@@ -52,7 +52,7 @@ const getUrl = () => {
 
 const getData = async () => {
   
-  const url = '/test002/https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/';
+  const url = 'https://worker01.nanada0629.workers.dev';
   //const url = getUrl();
   console.log(url);
   try {
@@ -69,7 +69,9 @@ const getData = async () => {
       console.log(response)
       throw new Error(`レスポンスステータス: ${response.status}`);
     }
-    const content = await response.blob()
+    //const content = await response.blob()
+    const content = await response.text()
+    console.log(content);
     const reader: any = new FileReader();
     reader.onload = () => {
       console.log(reader.result) 
