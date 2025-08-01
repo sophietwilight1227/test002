@@ -112,7 +112,7 @@ const getResponse = (str: string) => {
 </script>
 
 <template>
-  <div>読み込むスレを指定してください </div>
+  <div> 読み込むスレを指定してください </div>
   <input type="text" v-model="rawUrl">
   <button v-on:click="getData">表示</button>
   <div class="base">
