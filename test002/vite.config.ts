@@ -24,6 +24,6 @@ export default defineConfig({
       },
     },
   },
-    base: '/test02/', //通常はこっち
+    base: '/test002/', //通常はこっち
   //base: '/',  //カスタムドメインを使うならこっち？
 })
