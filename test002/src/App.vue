@@ -30,6 +30,19 @@ const test = () => {
   };
 }
 
+const  test2 = async () => {
+  GetHtml('https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/')
+    .then((text) => {
+      setText(text)
+    });  
+}
+
+async function GetHtml(url: string) {
+  const promise = fetch(url, {mode: "no-cors"})            // Promiseを返す
+  const response = await promise;       // fetch が確定するまで待機
+  return response.text();               // Text表現の解析結果を値としてプロミス返す
+}
+
 const getUrl = () => {
   const text = rawUrl.value.split("/");
   console.log(text);
@@ -38,21 +51,28 @@ const getUrl = () => {
 }
 
 const getData = async () => {
-  //const url = "/api/internet/26196/1752676023/";
-  const url = getUrl();
+  const url = '/api/internet/26196/1735542868/';
+  //const url = getUrl();
   console.log(url);
   try {
     const response = await fetch(url, {
                             mode: 'cors',
-                            method: 'GET',
-                            credentials: 'include' // 認証情報を含める設定
+                            method: "GET",
+                            headers: {
+                              "Access-Control-Allow-Headers": "*",
+                              "Access-Control-Allow-Origin": "*",
+                              "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE",
+                            }
                           });
     if (!response.ok) {
+      console.log(response)
       throw new Error(`レスポンスステータス: ${response.status}`);
     }
     const content = await response.blob()
     const reader: any = new FileReader();
-    reader.onload = () => { setText(reader.result) }
+    reader.onload = () => {
+      console.log(reader.result) 
+      setText(reader.result) }
     reader.readAsText(content, "euc-jp");
   } catch (error: any) {
     console.error(error.message);
