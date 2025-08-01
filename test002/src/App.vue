@@ -52,7 +52,7 @@ const getUrl = () => {
 
 const getData = async () => {
   
-  const url = 'https://worker01.nanada0629.workers.dev';
+  const url = '/api/https://worker01.nanada0629.workers.dev';
   //const url = getUrl();
   console.log(url);
   try {
@@ -69,8 +69,8 @@ const getData = async () => {
       console.log(response)
       throw new Error(`レスポンスステータス: ${response.status}`);
     }
-    //const content = await response.blob()
-    const content = await response.text()
+    const content = await response.blob()
+    //const content = await response.text()
     console.log(content);
     const reader: any = new FileReader();
     reader.onload = () => {
