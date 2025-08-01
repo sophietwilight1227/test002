@@ -18,8 +18,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        //target: 'https://jbbs.shitaraba.net/bbs/rawmode.cgi',
-        target: 'https://helloworld.nanada0629.workers.dev',
+        target: 'https://jbbs.shitaraba.net/bbs/rawmode.cgi',
+        //target: process.env.USE_LOCAL_SERVER ? 'https://jbbs.shitaraba.net/bbs/rawmode.cgi' : 'https://helloworld.nanada0629.workers.dev',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
