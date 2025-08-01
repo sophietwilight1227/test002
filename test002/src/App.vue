@@ -34,7 +34,7 @@ const getUrl = () => {
   const text = rawUrl.value.split("/");
   console.log(text);
   //return "/api/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
-  return "/api/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
+  return "https://helloworld.nanada0629.workers.dev/https://jbbs.shitaraba.net/bbs/rawmode/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
 }
 
 const getData = async () => {
@@ -130,7 +130,7 @@ const getResponse = (str: string) => {
 <template>
   <div>読み込むスレを指定してください </div>
   <input type="text" v-model="rawUrl">
-  <button v-on:click="test">表示</button>
+  <button v-on:click="getData">表示</button>
   <div class="base">
     <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
       <div v-bind:class="{'master': info.isMaster}" class="node">
