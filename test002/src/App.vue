@@ -4,7 +4,6 @@ import { reactive, ref, type Ref } from 'vue';
 
 const result: any = ref("");
 const textElem: any = ref(null);
-const iframeElem: any = ref(null);
 const data: Array<{num: string, 
                   name: string, 
                   date: string,
@@ -47,8 +46,8 @@ async function GetHtml(url: string) {
 const getUrl = () => {
   const text = rawUrl.value.split("/");
   console.log(text);
-  //return "/api/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
-  return "https://sophietwilight1227.github.io/https://jbbs.shitaraba.net/bbs/rawmode.cgi/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
+  return "https://test003-ecqh.onrender.com/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
+  //return "https://sophietwilight1227.github.io/https://jbbs.shitaraba.net/bbs/rawmode.cgi/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
 }
 
 const getData = async () => {
@@ -58,13 +57,13 @@ const getData = async () => {
     :' /api/?url=https://worker01.nanada0629.workers.dev'; // 開発環境での Cloudflare Workers の（デフォルト）エンドポイント
   //const url = `${proxyUrl}?url=${encodeURIComponent("https://worker01.nanada0629.workers.dev")}`;
   //const url = `${proxyUrl}?url=${"https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/"}`;
-  const url = '/api/?url=https://worker01.nanada0629.workers.dev';
+  //const url = '/api/?url=https://worker01.nanada0629.workers.dev';
   //const url = "https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/";
-  //const url = getUrl();
+  const url = getUrl();
   
   console.log(url);
   try {
-    const response = await fetch("https://test003-ecqh.onrender.com/", {
+    const response = await fetch(url, {
                             mode: 'cors',
                             method: "GET",
                           });
