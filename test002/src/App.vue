@@ -4,6 +4,7 @@ import { reactive, ref, type Ref } from 'vue';
 
 const result: any = ref("");
 const textElem: any = ref(null);
+const iframeElem: any = ref(null);
 const data: Array<{num: string, 
                   name: string, 
                   date: string,
@@ -63,27 +64,23 @@ const getData = async () => {
   
   console.log(url);
   try {
-    const response = await fetch("/?url=https://worker01.nanada0629.workers.dev", {
+    const response = await fetch("https://test003-ecqh.onrender.com/", {
                             mode: 'cors',
                             method: "GET",
-                            headers: {
-                              "Access-Control-Allow-Headers": "Content-Type",
-                              'Access-Control-Allow-Origin': "*",
-                              "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS",
-                            }
                           });
     if (!response.ok) {
       console.log(response)
       throw new Error(`レスポンスステータス : ${response.status}`);
     }
-    const content = await response.blob()
-    //const content = await response.text()
-    console.log(content);
-    const reader: any = new FileReader();
-    reader.onload = () => {
-      console.log(reader.result) 
-      setText(reader.result) }
-    reader.readAsText(content, "euc-jp");
+    //const content = await response.blob()
+    const content = await response.text()
+    setText(content) 
+    //console.log(content);
+    //const reader: any = new FileReader();
+    //reader.onload = () => {
+    //  console.log(reader.result) 
+   //   setText(reader.result) }
+    //reader.readAsText(content, "euc-jp");
   } catch (error: any) {
     console.error(error.message);
   }
@@ -155,12 +152,18 @@ const getResponse = (str: string) => {
   return {raw: str, messages: messages}
 }
 
+const windowOpen = () => {
+  const test = window.open("https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/")
+  console.log(test.document.documentElement.outerHTML);
+}
+
 </script>
 
 <template>
   <div>読み込むスレを指定してください </div>
   <input type="text" v-model="rawUrl">
   <button v-on:click="getData">表示</button>
+  <button v-on:click="windowOpen">新規窓</button>
   <div class="base">
     <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
       <div v-bind:class="{'master': info.isMaster}" class="node">
