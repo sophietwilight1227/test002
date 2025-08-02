@@ -112,16 +112,14 @@ const setText = (raw: string| null) => {
           data[i].isMaster = true;
           const result = getResponse(data[i].content);
           data[i].content = result.raw;
-          for(let j=result.messages.length; j >= 0; j--){
+          for(let j=result.messages.length-1; j >= 0; j--){
             const cont = {num: "", name: "", date: "", mail: "", id: "", threadTitle: "", content: result.messages[j], isMaster: true}
             data.splice(i+1, 0, cont);
           }
         }        
       }
-
     }
   }
-
 }
 
 const ja2Bit = ( str: string ): boolean => {
