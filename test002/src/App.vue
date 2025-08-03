@@ -13,7 +13,8 @@ const data: Array<{num: string,
                   threadTitle: string,
                   isMaster: boolean}> = reactive([])
 const masterList: Array<string> = reactive([]);
-const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/26196/1735542868/")
+const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/25499/1604056991/")
+const rawMessage: Ref<string> = ref("書き込みテスト")
 
 const test = () => {
   const xhr = new XMLHttpRequest();
@@ -48,6 +49,22 @@ const getUrl = () => {
   console.log(text);
   return "https://test003-ecqh.onrender.com/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
   //return "https://sophietwilight1227.github.io/https://jbbs.shitaraba.net/bbs/rawmode.cgi/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
+}
+const getUrlForPost = () => {
+  const text = rawUrl.value.split("/");
+  console.log(text);
+  //let url = "https://test003-ecqh.onrender.com/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
+  let url = "http://localhost:3000"
+  //let url = "https://localhost:3000/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
+  //url += ("&name=" + "名無し" + "&mail=" + "sage" + "&message=" + rawMessage.value);
+  const params = {url1: text[text.length - 4],
+                  url2: text[text.length - 3], 
+                  url3: text[text.length - 2], 
+                  name: "名無し",
+                  mail: "sage",
+                  message: rawMessage.value
+  }
+  return {url: url, body: params};
 }
 
 const getData = async () => {
@@ -154,6 +171,28 @@ const windowOpen = () => {
   console.log(test.document.documentElement.outerHTML);
 }
 
+const write = async () => {
+  try {
+    const urlParams = getUrlForPost();
+    const response = await fetch(urlParams.url, {
+                            mode: 'cors',
+                            method: "POST",
+                            headers: {
+                              'Accept': 'application/json',
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(urlParams.body),
+                          });
+    if (!response.ok) {
+      console.log(response)
+      throw new Error(`レスポンスステータス : ${response.status}`);
+    }
+    const content = await response.text()
+    setText(content) 
+  } catch (error: any) {
+    console.error(error.message);
+  }
+}
 </script>
 
 <template>
@@ -161,6 +200,10 @@ const windowOpen = () => {
   <input type="text" v-model="rawUrl">
   <button v-on:click="getData">表示</button>
   <button v-on:click="windowOpen">新規窓</button>
+  <br>
+  <div>書き込み</div>
+  <input type="text" v-model="rawMessage"></input>
+  <button v-on:click="write">書き込み</button>
   <div class="base">
     <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
       <div v-bind:class="{'master': info.isMaster}" class="node">
