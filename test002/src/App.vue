@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { reactive, ref, type Ref } from 'vue';
-
+import { nextTick, reactive, ref, type Ref } from 'vue';
+import Encoding from 'encoding-japanese';
+import ToggleButton from './component/toggleButton.vue';
 
 const result: any = ref("");
 const textElem: any = ref(null);
@@ -12,9 +13,34 @@ const data: Array<{num: string,
                   id: string,
                   threadTitle: string,
                   isMaster: boolean}> = reactive([])
+const masterData: Array<{
+                  num: string, 
+                  name: string, 
+                  date: string,
+                  mail: string,
+                  content: string,
+                  id: string,
+                  threadTitle: string,
+                  isMaster: boolean,
+                  childMessages: Array<{
+                    num: string, 
+                    name: string, 
+                    date: string,
+                    mail: string,
+                    content: string,
+                    id: string,
+                    threadTitle: string,
+                    isMaster: boolean,
+                    response: string,
+                  }>}> = reactive([])
 const masterList: Array<string> = reactive([]);
-const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/25499/1604056991/")
-const rawMessage: Ref<string> = ref("書き込みテスト")
+const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/26196/1735542868/")
+const rawMessage: Ref<string> = ref("vueからの書き込みテストです")
+const threadTitle: Ref<string> = ref("");
+const isLoaded: Ref<boolean> = ref(false);
+const isMasterMode: Ref<boolean> = ref(false);
+const MasterToggleElem: any = ref(null);
+const refSpanElem: any = ref(null);
 
 const test = () => {
   const xhr = new XMLHttpRequest();
@@ -31,54 +57,23 @@ const test = () => {
   };
 }
 
-const  test2 = async () => {
-  GetHtml('https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/')
-    .then((text) => {
-      setText(text)
-    });  
-}
-
-async function GetHtml(url: string) {
-  const promise = fetch(url, {mode: "no-cors"})            // Promiseを返す
-  const response = await promise;       // fetch が確定するまで待機
-  return response.text();               // Text表現の解析結果を値としてプロミス返す
+const changeMasterMode = () => {
+  isMasterMode.value = MasterToggleElem.value.isActive;
+  localStorage.setItem("zenresu_master_mode", isMasterMode.value.toString());
+  getData();
 }
 
 const getUrl = () => {
   const text = rawUrl.value.split("/");
   console.log(text);
+  //return "http://127.0.0.1:8787/"
   return "https://test003-ecqh.onrender.com/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
   //return "https://sophietwilight1227.github.io/https://jbbs.shitaraba.net/bbs/rawmode.cgi/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
-}
-const getUrlForPost = () => {
-  const text = rawUrl.value.split("/");
-  console.log(text);
-  //let url = "https://test003-ecqh.onrender.com/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
-  let url = "http://localhost:3000"
-  //let url = "https://localhost:3000/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
-  //url += ("&name=" + "名無し" + "&mail=" + "sage" + "&message=" + rawMessage.value);
-  const params = {url1: text[text.length - 4],
-                  url2: text[text.length - 3], 
-                  url3: text[text.length - 2], 
-                  name: "名無し",
-                  mail: "sage",
-                  message: rawMessage.value
-  }
-  return {url: url, body: params};
 }
 
 const getData = async () => {
   const isProduction = import.meta.env.MODE === "production";
-  const proxyUrl = isProduction
-    ? "https://worker01.nanada0629.workers.dev" // 先ほど発行されたエンドポイント
-    :' /api/?url=https://worker01.nanada0629.workers.dev'; // 開発環境での Cloudflare Workers の（デフォルト）エンドポイント
-  //const url = `${proxyUrl}?url=${encodeURIComponent("https://worker01.nanada0629.workers.dev")}`;
-  //const url = `${proxyUrl}?url=${"https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/"}`;
-  //const url = '/api/?url=https://worker01.nanada0629.workers.dev';
-  //const url = "https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/";
   const url = getUrl();
-  
-  console.log(url);
   try {
     const response = await fetch(url, {
                             mode: 'cors',
@@ -88,15 +83,16 @@ const getData = async () => {
       console.log(response)
       throw new Error(`レスポンスステータス : ${response.status}`);
     }
-    //const content = await response.blob()
     const content = await response.text()
-    setText(content) 
-    //console.log(content);
-    //const reader: any = new FileReader();
-    //reader.onload = () => {
-    //  console.log(reader.result) 
-   //   setText(reader.result) }
-    //reader.readAsText(content, "euc-jp");
+    isMasterMode.value = (localStorage.getItem("zenresu_master_mode") == "true")
+    MasterToggleElem.value.isActive = isMasterMode.value;
+    if(isMasterMode.value){
+      setTextForMaster(content) 
+    }else{
+      setText(content) 
+    }
+    
+    isLoaded.value = true;
   } catch (error: any) {
     console.error(error.message);
   }
@@ -118,20 +114,23 @@ const setText = (raw: string| null) => {
                     threadTitle: resInfo[i * 7 + 5],
                     isMaster: false,
       }
+      if(info.threadTitle != ""){
+        threadTitle.value = info.threadTitle;
+      }
       if((info.content.split("&gt;&gt;")).length > 2){
         masterList.push(info.id);
       }
       data.push(info);
     }   
-    for(let i=data.length; i >= 0; i--){
+    for(let i=0; i < data.length; i++){
       if(data[i] != undefined){
         if(masterList.includes(data[i].id)){
           data[i].isMaster = true;
           const result = getResponse(data[i].content);
           data[i].content = result.raw;
-          for(let j=result.messages.length-1; j >= 0; j--){
+          for(let j=0; j < result.messages.length; j++){
             const cont = {num: "", name: "", date: "", mail: "", id: "", threadTitle: "", content: result.messages[j], isMaster: true}
-            data.splice(i+1, 0, cont);
+            data.splice(i+j+1, 0, cont);
           }
         }        
       }
@@ -166,52 +165,297 @@ const getResponse = (str: string) => {
   return {raw: str, messages: messages}
 }
 
-const windowOpen = () => {
-  const test = window.open("https://jbbs.shitaraba.net/bbs/rawmode.cgi/internet/26196/1735542868/")
-  console.log(test.document.documentElement.outerHTML);
+
+const setTextForMaster = (raw: string| null) => {
+  const JUDGE_NUM = 2; //この数以上のアンカーを持つレスを主のレスとみなす
+  masterData.splice(0);
+  if(raw != null){
+    const responseList: Map<string, any> = new Map();
+    const text = raw.split("<>").join("\n");
+    const resInfo = text.split("\n");
+    for(let i=0; i < (resInfo.length - 1) / 7; i++){
+      const info = {num:resInfo[i * 7 + 0],
+                    name: resInfo[i * 7 + 1], 
+                    mail: resInfo[i * 7 + 2],
+                    date: resInfo[i * 7 + 3],
+                    content: resInfo[i * 7 + 4],
+                    id: resInfo[i * 7 + 6],
+                    threadTitle: resInfo[i * 7 + 5],
+                    isMaster: false,
+                    childMessages: [],
+      }
+      if((info.content.split("&gt;&gt;")).length >= JUDGE_NUM){
+        masterList.push(info.id);
+      }
+      masterData.push(info);
+    }   
+    for(let i=0; i < masterData.length; i++){
+      if(masterData[i] != undefined){
+        if(!masterList.includes(masterData[i].id)){
+          responseList.set(masterData[i].num, masterData[i]);
+        }
+      }
+    }
+
+    for(let i=0; i < masterData.length; i++){
+      if(masterData[i] != undefined){
+        if(masterList.includes(masterData[i].id)){
+          masterData[i].isMaster = true;
+          const result = getResponse(masterData[i].content);
+          masterData[i].content = result.raw;
+          for(let j=0; j < result.messages.length; j++){
+            const cont = {num: "", name: "", date: "", mail: "", id: "", threadTitle: "", content: result.messages[j], isMaster: true, response: ""}
+            const arrRes = getResponseNumber(cont.content);
+            console.log(arrRes);
+            for(let j=0; j < arrRes.length; j++){
+              const resNum = arrRes[j];
+              if(responseList.has(resNum)){
+                masterData[i].childMessages.splice(i+1, 0, responseList.get(resNum));
+                responseList.delete(resNum);
+              }
+              masterData[i].childMessages.splice(i+1, 0, cont);              
+            }
+          }
+        }     
+      }
+    }
+    for(let i=masterData.length-1; i >= 0; i--){
+      if(!masterData[i].isMaster){
+        masterData.splice(i, 1);
+      }
+    }
+    const info = {num:"",
+                    name: "", 
+                    mail: "",
+                    date: "",
+                    content: "",
+                    id: "",
+                    threadTitle: "",
+                    isMaster: true,
+                    childMessages: new Array<any>(),
+    }
+    for(let i=0; i < 1000; i++){
+      if(responseList.has(i.toString())){
+        const res: any = responseList.get(i.toString());
+        if(res != null){
+          if(!masterList.includes(res.id)){
+            const res: any = responseList.get(i.toString())
+            info.childMessages.push(res);            
+          }
+        }
+
+
+      }
+    }
+    masterData.push(info);
+  }
+  return [];
 }
 
-const write = async () => {
-  try {
-    const urlParams = getUrlForPost();
-    const response = await fetch(urlParams.url, {
-                            mode: 'cors',
-                            method: "POST",
-                            headers: {
-                              'Accept': 'application/json',
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(urlParams.body),
-                          });
-    if (!response.ok) {
-      console.log(response)
-      throw new Error(`レスポンスステータス : ${response.status}`);
+const getResponseNumber = (str: string): Array<string> => {
+  const range = str.match(/&gt;&gt;[0-9]+-[0-9]+/g)
+  if(range != null && range.length > 0){
+    const numbers = range[0].match(/[0-9]+/g);
+    if(numbers != null){
+      console.log(numbers);
+      const from:number = Number.parseInt(numbers[0]);
+      const to:number = Number.parseInt(numbers[1]);
+      const result = []
+      console.log(from, to)
+      for(let i=from; i<=to; i++){
+        result.push(i.toString());
+      }
+      return result;      
+    }else{
+      return []
     }
-    const content = await response.text()
-    setText(content) 
-  } catch (error: any) {
-    console.error(error.message);
+  }else{
+    const res = str.match(/&gt;&gt;[0-9]+/g)
+    if(res == null){
+      return [];
+    }else{
+      const result = [];
+      console.log(res);
+      for(let i=0; i<res.length; i++){
+        
+        if(res[i].length >= 8){
+          result.push(res[i].slice(8))
+        }
+      }
+      return result;
+    }    
   }
 }
+
+const copyToClipboard = async () => {
+  if (!navigator.clipboard) {
+    alert("残念。このブラウザは対応していません...");
+    return;
+  }
+
+  navigator.clipboard.writeText(await getResponseSentense()).then(
+    () => {
+      alert("クリップボードにレス内容をコピーしました");
+    },
+    () => {
+      alert('コピーに失敗しました');
+    });
+}
+
+const getResponseSentense = async () => {
+  if(isMasterMode.value){
+    let response: string = ""
+    for(let i=0; i < masterData[masterData.length-1].childMessages.length; i++){
+      const num = masterData[masterData.length-1].childMessages[i].num
+      const res = masterData[masterData.length-1].childMessages[i].response;
+      if(res != null && res != ""){
+        response += ">>" + num.toString() + "\n" + res + "\n\n"; 
+      }
+    }
+    const aa = rawMessage.value;
+    return await concatAA(aa, response);
+  }else{
+    return rawMessage.value;
+  }
+}
+
+const concatAA = async (aa: string, comment: string) => {
+  let aaText = aa.split("\n");
+  const commentText = comment.split("\n");
+  let startRow = 0;
+  let endRow = 0;
+  if(aaText.length >= commentText.length){
+    startRow = Math.floor(aaText.length / 2) - Math.floor(commentText.length / 2);
+    endRow = startRow + commentText.length - 1;
+  }else{
+    for(let i=0; i < commentText.length - aaText.length; i++){
+      aa += "\n"
+    }
+    aaText = aa.split("\n");
+    startRow = 0;
+    endRow = commentText.length - 1;
+  }
+  const editAAText = [];
+  const editAAWidth = [];
+  for(let i=0; i <= endRow - startRow; i++){
+    editAAText[i] = aaText[i + startRow];
+    editAAWidth[i] = await calcWidth(editAAText[i]);
+  }
+  const editAA = addSpaceToLineEndToArrange(editAAText, editAAWidth).split("\n");
+  let result = "";
+  for(let i=0; i < startRow; i++){
+    result += aaText[i] + "\n";
+  }
+  for(let i = 0; i < editAA.length; i++){
+    result += editAA[i] + commentText[i] + "\n";
+  }
+  for(let i=0; i < aaText.length - startRow - editAA.length - 1; i++){
+    result += aaText[endRow + 1 + i] + "\n";
+  }
+  console.log(result)
+  return result;
+}
+
+const calcWidth = async (text: string) => {
+  refSpanElem.value.innerHTML = "text" + text;
+  await nextTick();
+  //console.log(span, span.offsetWidth, span.innerHTML);
+  return refSpanElem.value.offsetWidth;
+}
+
+const addSpaceToLineEndToArrange = (aa: Array<string>, widthList: Array<number>) => {
+  const aryMax = (a: number,b: number) => {return Math.max(a,b)};
+  const maxWidth = widthList.reduce(aryMax);
+
+  //const widthHalf:number = 5; //半角スペースの幅
+  //const widthFull: number = 11;   //全角スペースの幅
+  for(let i=0; i < widthList.length; i++){
+    const widthDiff:number = maxWidth - widthList[i];
+    let widthRes: number = widthDiff % 11;
+    let countHalf = 10; //全角1個　=> 半角2個 の変換で1dotずれるので、最大10回ずらせばすべてカバーできる
+    let countFull = 10 + (widthDiff - widthRes) / 11;
+    if(widthRes >= 5){
+      widthRes -= 5;
+      countHalf ++;
+    }
+    countHalf -= widthRes * 2;
+    countFull += widthRes
+    aa[i] += "　".repeat(countFull - countHalf)
+    aa[i] += "　 ".repeat(countHalf);
+  }
+  const aaPlusSpace = aa.join("\n");
+  return aaPlusSpace;
+}
+
+
+const windowOpen = () => {
+  const test: any = window.open(rawUrl.value);
+  test.scrollTo(0, 0);
+}
+
 </script>
 
 <template>
-  <div>読み込むスレを指定してください </div>
-  <input type="text" v-model="rawUrl">
-  <button v-on:click="getData">表示</button>
-  <button v-on:click="windowOpen">新規窓</button>
-  <br>
-  <div>書き込み</div>
-  <input type="text" v-model="rawMessage"></input>
-  <button v-on:click="write">書き込み</button>
-  <div class="base">
-    <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
-      <div v-bind:class="{'master': info.isMaster}" class="node">
-        <span>{{ info.num }}</span>
-        <span>{{ info.name }}</span>
-        <span>{{ info.date }}</span>
-        <span>{{ info.id }}</span>
-        <div class="asciiArt" v-html="info.content"></div>
+  <div class="base2" >
+    <div class="header" v-show="isLoaded">
+      <span>{{ threadTitle + " / " + data.length + "レス" }}</span>
+      <span>マスターモード</span>
+      <ToggleButton v-on:click="changeMasterMode" ref="MasterToggleElem"></ToggleButton>
+    </div>
+    <div v-if="!isLoaded">
+      <div>読み込むスレを指定してください </div>
+      <input type="text" v-model="rawUrl">
+      <button v-on:click="getData">表示</button>    
+    </div>
+    <div v-if="isLoaded">
+      <div class="base" v-if="!isMasterMode" >
+      <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
+        <div v-bind:class="{'master': info.isMaster}" class="node">
+          <span>{{ info.num }}</span>
+          <span>{{ info.name }}</span>
+          <span>{{ info.date }}</span>
+          <span>{{ info.id }}</span>
+          <div class="asciiArt" v-html="info.content"></div>
+        </div>
+      </div>    
+    </div>
+      <div class="base" v-if="isMasterMode">
+        <div v-for="info in masterData" > 
+          <div class="frameRow">
+            <div class="master node">
+              <span>{{ info.num }}</span>
+              <span>{{ info.name }}</span>
+              <span>{{ info.date }}</span>
+              <span>{{ info.id }}</span>
+              <div class="asciiArt" v-html="info.content"></div>            
+            </div>
+            <div class="frameColumn">
+              <div v-for="child in info.childMessages" v-bind:class="{'frame': child.isMaster}" >
+                <div v-bind:class="{master: !child.isMaster}" class="node">
+                  <span>{{ child.num }}</span>
+                  <span>{{ child.name }}</span>
+                  <span>{{ child.date }}</span>
+                  <span>{{ child.id }}</span>
+                  <div class="asciiArt" v-html="child.content"></div>
+                </div>
+                <div v-if="!child.isMaster && info.content==''" class="node">
+                  <span>{{ ">>" + child.num.toString() }}</span>
+                  <textarea class="textArea" v-model="child.response"></textarea>
+                </div>
+              </div>            
+            </div>
+          </div>
+        </div>    
+      </div>
+    </div>
+    <div class="footer" v-show="isLoaded">
+      <div>
+        <div>
+          <button v-on:click="copyToClipboard">クリップボードにコピー</button>   
+          <button v-on:click="windowOpen">書き込みは元ページから(別窓でを開きます)</button> 
+        </div>
+        <textarea class="textArea" v-model="rawMessage"></textarea>
+        <span ref="refSpanElem"></span>
       </div>
     </div>    
   </div>
@@ -221,10 +465,27 @@ const write = async () => {
 <style scoped>
 .base {
   background-color: skyblue;
+  flex: 1;
+  overflow-y: auto;
+  width: 100%;
+}
+.base2 {
+  display: flex;
+  flex-direction: column;  
+  max-height: 100vh;
+  width: 100%;
 }
 .frame {
   display: flex;
- justify-content: flex-end;
+  justify-content: flex-end;
+}
+.frameRow {
+  display: flex;
+  flex-direction: row;
+}
+.frameColumn {
+  display: flex;
+  flex-direction: column;
 }
 .node {
   margin: 10px;
@@ -239,6 +500,12 @@ const write = async () => {
 .master {
   background-color: white;
   color: darkblue
+}
+.textArea {
+  field-sizing: content;
+  min-width: 150px;
+  min-height: min-content;
+  white-space: pre;
 }
 .asciiArt {
   white-space: pre;
