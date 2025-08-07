@@ -88,7 +88,12 @@ const getData = async () => {
       throw new Error(`レスポンスステータス : ${response.status}`);
     }
     const content = await response.text()
-    isMasterMode.value = (localStorage.getItem("zenresu_master_mode") == "true")
+    const isMaster = localStorage.getItem("zenresu_master_mode");
+    if(isMaster == null){
+      isMasterMode.value = false;
+    }else{
+      isMasterMode.value = (isMaster == "true")
+    }
     localStorage.setItem("zenresu_last_visit", rawUrl.value);
     MasterToggleElem.value.isActive = isMasterMode.value;
     if(isMasterMode.value){
