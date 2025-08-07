@@ -481,7 +481,7 @@ onMounted(() => {
       <div>読み込むスレを指定してください </div> 
     </div>
     <div v-if="isLoaded" class="base">
-      <div class="base" v-if="!isMasterMode" >
+      <div v-if="!isMasterMode" >
       <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
         <div v-bind:class="{'master': info.isMaster}" class="node">
           <span>{{ info.num }}</span>
@@ -497,7 +497,7 @@ onMounted(() => {
         </div>
       </div>    
     </div>
-      <div class="base" v-if="isMasterMode">
+      <div v-if="isMasterMode">
         <div v-for="info in masterData" > 
           <div class="frameRow">
             <div class="master node">
@@ -547,6 +547,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
+body {
+  margin: 0;
+}
 .loadText {
   color: white;
   margin: 0 auto;
@@ -639,6 +642,7 @@ img {
   flex-direction: column;  
   max-width: 99vw;
   max-height: 95vh;
+  overflow: hidden;
   width: fit-content;
 }
 .frame {
