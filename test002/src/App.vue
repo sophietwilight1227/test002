@@ -36,7 +36,7 @@ const masterData: Array<{
                     response: string,
                   }>}> = reactive([])
 const masterList: Array<string> = reactive([]);
-const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/26196/1716204057/")
+const rawUrl: Ref<string> = ref("")
 const rawMessage: Ref<string> = ref("")
 const threadTitle: Ref<string> = ref("");
 const isLoaded: Ref<boolean> = ref(false);
