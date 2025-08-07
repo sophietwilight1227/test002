@@ -344,14 +344,19 @@ const copyToClipboard = async () => {
     alert("残念。このブラウザは対応していません...");
     return;
   }
+  const text = await getResponseSentense()
+  if(text != null){
+    navigator.clipboard.writeText(text).then(
+      () => {
+        alert("クリップボードにレス内容をコピーしました");
+      },
+      () => {
+        alert('コピーに失敗しました');
+      });    
+  }else{
+    alert('コピーに失敗しました');
+  }
 
-  navigator.clipboard.writeText(await getResponseSentense()).then(
-    () => {
-      alert("クリップボードにレス内容をコピーしました");
-    },
-    () => {
-      alert('コピーに失敗しました');
-    });
 }
 
 const getResponseSentense = async () => {
@@ -365,7 +370,11 @@ const getResponseSentense = async () => {
       }
     }
     const aa = rawMessage.value;
-    return await concatAA(aa, response);
+    if(aa == ""){
+      return response;
+    }else{
+      return await concatAA(aa, response);
+    }
   }else{
     return rawMessage.value;
   }
@@ -513,7 +522,7 @@ onMounted(() => {
                   <div class="asciiArt" v-html="child.content"></div>
                 </div>
                 <div v-if="!child.isMaster && responseList.has(child.num)" class="node">
-                  <span>{{ ">>" + child.num.toString() }}</span>
+                  <div>{{ ">>" + child.num.toString() }}</div>
                   <textarea class="textArea" v-model="child.response"></textarea>
                 </div>
               </div>            
@@ -613,17 +622,24 @@ img {
   object-fit: cover;
   height: 100px;
 }
-
+.footer {
+  height: 10vh;
+}
+.header {
+  height: 5vh;
+}
 .base {
   background-color: skyblue;
   flex: 1;
+  height: 85vh;
   overflow: auto;
 }
 .base2 {
   display: flex;
   flex-direction: column;  
+  max-width: 99vw;
   max-height: 95vh;
-    width: fit-content;
+  width: fit-content;
 }
 .frame {
   display: flex;
