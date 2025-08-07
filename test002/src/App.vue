@@ -46,6 +46,8 @@ const refSpanElem: any = ref(null);
 const responseList: Map<string, any> = reactive(new Map());
 const isLoading: Ref<boolean> = ref(false);
 const responseCount: Ref<number> = ref(0);
+const isRowView: Ref<boolean> = ref(true);
+const ViewToggleElem: any = ref(null);
 
 const test = () => {
   const xhr = new XMLHttpRequest();
@@ -66,6 +68,10 @@ const changeMasterMode = () => {
   isMasterMode.value = MasterToggleElem.value.isActive;
   localStorage.setItem("zenresu_master_mode", isMasterMode.value.toString());
   getData();
+}
+const changeViewMode = () => {
+  isRowView.value = ViewToggleElem.value.isActive;
+  localStorage.setItem("zenresu_view_mode", isRowView.value.toString());
 }
 
 const getUrl = () => {
@@ -94,8 +100,15 @@ const getData = async () => {
     }else{
       isMasterMode.value = (isMaster == "true")
     }
+    const viewMode =  localStorage.getItem("zenresu_view_mode");
+    if(viewMode == null){
+      isRowView.value = true;
+    }else{
+      isRowView.value = (viewMode == "true")
+    }
     localStorage.setItem("zenresu_last_visit", rawUrl.value);
     MasterToggleElem.value.isActive = isMasterMode.value;
+    ViewToggleElem.value.isActive = isRowView.value;
     if(isMasterMode.value){
       masterData.splice(0,);
       setTextForMaster(content) 
@@ -475,7 +488,11 @@ onMounted(() => {
       <input type="text" v-model="rawUrl">
       <button v-on:click="getData">表示</button>   
       <span>マスターモード</span>
-      <ToggleButton v-on:click="changeMasterMode" ref="MasterToggleElem"></ToggleButton>       
+      <ToggleButton v-on:click="changeMasterMode" ref="MasterToggleElem"></ToggleButton>   
+      <span v-show="isMasterMode">
+        <span>横長表示</span>
+        <ToggleButton v-on:click="changeViewMode" ref="ViewToggleElem"></ToggleButton>  
+      </span>    
     </div>
     <div v-if="!isLoaded">
       <div>読み込むスレを指定してください </div> 
@@ -499,7 +516,7 @@ onMounted(() => {
     </div>
       <div v-if="isMasterMode">
         <div v-for="info in masterData" > 
-          <div class="frameRow">
+          <div :class="{frameRow: isRowView, frameColumn: !isRowView}">
             <div class="master node">
               <span>{{ info.num }}</span>
               <span>{{ info.name }}</span>
