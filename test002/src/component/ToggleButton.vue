@@ -27,6 +27,7 @@ defineExpose({ isActive })
 
 <style scoped>
 .switch_outer {
+    display: inline-block;
     background-color: lightgray;
     border-radius: 30px;
     position: relative;

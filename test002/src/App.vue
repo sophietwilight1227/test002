@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, reactive, ref, type Ref } from 'vue';
+import { nextTick, onMounted, reactive, ref, type Ref } from 'vue';
 import Encoding from 'encoding-japanese';
 import ToggleButton from './component/toggleButton.vue';
 
@@ -12,7 +12,8 @@ const data: Array<{num: string,
                   content: string,
                   id: string,
                   threadTitle: string,
-                  isMaster: boolean}> = reactive([])
+                  isMaster: boolean,
+                  imageList: Array<string>}> = reactive([])
 const masterData: Array<{
                   num: string, 
                   name: string, 
@@ -22,6 +23,7 @@ const masterData: Array<{
                   id: string,
                   threadTitle: string,
                   isMaster: boolean,
+                  imageList: Array<string>,
                   childMessages: Array<{
                     num: string, 
                     name: string, 
@@ -34,13 +36,16 @@ const masterData: Array<{
                     response: string,
                   }>}> = reactive([])
 const masterList: Array<string> = reactive([]);
-const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/26196/1735542868/")
-const rawMessage: Ref<string> = ref("vueからの書き込みテストです")
+const rawUrl: Ref<string> = ref("https://jbbs.shitaraba.net/bbs/read.cgi/internet/26196/1716204057/")
+const rawMessage: Ref<string> = ref("")
 const threadTitle: Ref<string> = ref("");
 const isLoaded: Ref<boolean> = ref(false);
 const isMasterMode: Ref<boolean> = ref(false);
 const MasterToggleElem: any = ref(null);
 const refSpanElem: any = ref(null);
+const responseList: Map<string, any> = reactive(new Map());
+const isLoading: Ref<boolean> = ref(false);
+const responseCount: Ref<number> = ref(0);
 
 const test = () => {
   const xhr = new XMLHttpRequest();
@@ -65,7 +70,6 @@ const changeMasterMode = () => {
 
 const getUrl = () => {
   const text = rawUrl.value.split("/");
-  console.log(text);
   //return "http://127.0.0.1:8787/"
   return "https://test003-ecqh.onrender.com/?url1=" + text[text.length - 4] + "&url2=" + text[text.length - 3] + "&url3=" + text[text.length - 2] ;
   //return "https://sophietwilight1227.github.io/https://jbbs.shitaraba.net/bbs/rawmode.cgi/" + text[text.length - 4] + "/" + text[text.length - 3] + "/" + text[text.length - 2] + "/"
@@ -73,6 +77,7 @@ const getUrl = () => {
 
 const getData = async () => {
   const isProduction = import.meta.env.MODE === "production";
+  isLoading.value = true;
   const url = getUrl();
   try {
     const response = await fetch(url, {
@@ -80,18 +85,20 @@ const getData = async () => {
                             method: "GET",
                           });
     if (!response.ok) {
-      console.log(response)
       throw new Error(`レスポンスステータス : ${response.status}`);
     }
     const content = await response.text()
     isMasterMode.value = (localStorage.getItem("zenresu_master_mode") == "true")
+    localStorage.setItem("zenresu_last_visit", rawUrl.value);
     MasterToggleElem.value.isActive = isMasterMode.value;
     if(isMasterMode.value){
+      masterData.splice(0,);
       setTextForMaster(content) 
     }else{
+      data.splice(0)
       setText(content) 
     }
-    
+    isLoading.value = false;
     isLoaded.value = true;
   } catch (error: any) {
     console.error(error.message);
@@ -104,15 +111,18 @@ const setText = (raw: string| null) => {
   }else{
     const text = raw.split("<>").join("\n");
     const resInfo = text.split("\n");
+    responseCount.value = Math.round(resInfo.length / 7);
     for(let i=0; i < (resInfo.length - 1) / 7; i++){
+      const content = resInfo[i * 7 + 4];
       const info = {num:resInfo[i * 7 + 0],
                     name: resInfo[i * 7 + 1], 
                     mail: resInfo[i * 7 + 2],
                     date: resInfo[i * 7 + 3],
-                    content: resInfo[i * 7 + 4],
+                    content: content,
                     id: resInfo[i * 7 + 6],
                     threadTitle: resInfo[i * 7 + 5],
                     isMaster: false,
+                    imageList: getImageList(content),
       }
       if(info.threadTitle != ""){
         threadTitle.value = info.threadTitle;
@@ -127,9 +137,9 @@ const setText = (raw: string| null) => {
         if(masterList.includes(data[i].id)){
           data[i].isMaster = true;
           const result = getResponse(data[i].content);
-          data[i].content = result.raw;
+          data[i].content = deleteEmptyRow(result.raw);
           for(let j=0; j < result.messages.length; j++){
-            const cont = {num: "", name: "", date: "", mail: "", id: "", threadTitle: "", content: result.messages[j], isMaster: true}
+            const cont = {num: "", name: "", date: "", mail: "", id: "", threadTitle: "", content: result.messages[j], isMaster: true, imageList: []}
             data.splice(i+j+1, 0, cont);
           }
         }        
@@ -137,9 +147,42 @@ const setText = (raw: string| null) => {
     }
   }
 }
+const deleteEmptyRow = (str: string): string => {
+  const text = str.split("<br>");
+  let result = "";
+  for(let i=0; i < text.length; i++){
+    const res = text[i].trim();
+    if(res != ""){
+      result += text[i] + "\n";
+    }
+  }
+  return result;
+}
+const getImageList = (str: string): Array<string> => {
+  let result: Array<string> = [];
+  const text = str.split("ttp")
+  for(let i=0; i < text.length; i++){
+    const matchListJpeg = text[i].match(/.+jpeg/g);
+    const matchListJpg = text[i].match(/.+jpg/g);
+    const matchListPng = text[i].match(/.+png/g);
+    result = addImageList(result, matchListJpeg);
+    result = addImageList(result, matchListJpg);
+    result = addImageList(result, matchListPng);        
+  }
+  return result
+}
+const addImageList = (list: Array<string>, matchList: RegExpMatchArray | null) => {
+  if(matchList != null){
+    for(let i=0; i < matchList.length; i++){
+      list.push("http" + matchList[i])
+    }
+  }
+  return list
+}
 
+//日本語の文章かどうかの判定。日本語が4文字以上ならtrue(日本語である)
 const ja2Bit = ( str: string ): boolean => {
-  return ( str.match(/[\u30a0-\u30ff\u3040-\u309f\u3005-\u3006\u30e0-\u9fcf]{5}/) )? true : false
+  return ( str.match(/[\u30a0-\u30ff\u3040-\u309f\u3005-\u3006\u30e0-\u9fcf]{4}/) )? true : false
 }
 
 const getResponse = (str: string) => {
@@ -158,6 +201,9 @@ const getResponse = (str: string) => {
       if(ja2Bit(msg)){
         messages[messages.length-1] += ("\n" + msg);
         str = str.replace(msg, "");
+      }else if(ja2Bit(text[i])){
+        messages[messages.length-1] += ("\n" + text[i]);
+        str = str.replace(text[i], "");
       }
     }
     
@@ -170,18 +216,22 @@ const setTextForMaster = (raw: string| null) => {
   const JUDGE_NUM = 2; //この数以上のアンカーを持つレスを主のレスとみなす
   masterData.splice(0);
   if(raw != null){
-    const responseList: Map<string, any> = new Map();
+    //const responseList: Map<string, any> = new Map();
     const text = raw.split("<>").join("\n");
     const resInfo = text.split("\n");
+    responseCount.value = Math.round(resInfo.length / 7);
     for(let i=0; i < (resInfo.length - 1) / 7; i++){
+      const content = resInfo[i * 7 + 4];
+      //const content ="test";
       const info = {num:resInfo[i * 7 + 0],
                     name: resInfo[i * 7 + 1], 
                     mail: resInfo[i * 7 + 2],
                     date: resInfo[i * 7 + 3],
-                    content: resInfo[i * 7 + 4],
+                    content: content,
                     id: resInfo[i * 7 + 6],
                     threadTitle: resInfo[i * 7 + 5],
                     isMaster: false,
+                    imageList: getImageList(content),
                     childMessages: [],
       }
       if((info.content.split("&gt;&gt;")).length >= JUDGE_NUM){
@@ -202,11 +252,10 @@ const setTextForMaster = (raw: string| null) => {
         if(masterList.includes(masterData[i].id)){
           masterData[i].isMaster = true;
           const result = getResponse(masterData[i].content);
-          masterData[i].content = result.raw;
+          masterData[i].content = deleteEmptyRow(result.raw);
           for(let j=0; j < result.messages.length; j++){
             const cont = {num: "", name: "", date: "", mail: "", id: "", threadTitle: "", content: result.messages[j], isMaster: true, response: ""}
             const arrRes = getResponseNumber(cont.content);
-            console.log(arrRes);
             for(let j=0; j < arrRes.length; j++){
               const resNum = arrRes[j];
               if(responseList.has(resNum)){
@@ -232,6 +281,7 @@ const setTextForMaster = (raw: string| null) => {
                     id: "",
                     threadTitle: "",
                     isMaster: true,
+                    imageList: [],
                     childMessages: new Array<any>(),
     }
     for(let i=0; i < 1000; i++){
@@ -257,11 +307,9 @@ const getResponseNumber = (str: string): Array<string> => {
   if(range != null && range.length > 0){
     const numbers = range[0].match(/[0-9]+/g);
     if(numbers != null){
-      console.log(numbers);
       const from:number = Number.parseInt(numbers[0]);
       const to:number = Number.parseInt(numbers[1]);
       const result = []
-      console.log(from, to)
       for(let i=from; i<=to; i++){
         result.push(i.toString());
       }
@@ -275,7 +323,6 @@ const getResponseNumber = (str: string): Array<string> => {
       return [];
     }else{
       const result = [];
-      console.log(res);
       for(let i=0; i<res.length; i++){
         
         if(res[i].length >= 8){
@@ -352,7 +399,6 @@ const concatAA = async (aa: string, comment: string) => {
   for(let i=0; i < aaText.length - startRow - editAA.length - 1; i++){
     result += aaText[endRow + 1 + i] + "\n";
   }
-  console.log(result)
   return result;
 }
 
@@ -393,21 +439,34 @@ const windowOpen = () => {
   test.scrollTo(0, 0);
 }
 
+onMounted(() => {
+  const url = localStorage.getItem("zenresu_last_visit");
+  if(url != null && url != ""){
+    rawUrl.value = url;
+    getData();
+  }
+})
+
 </script>
 
 <template>
+  <div class="loaderBase" v-show="isLoading">
+    <div class="loadText">Loading...</div>
+    <div class="loader"></div>
+  </div>
+  
   <div class="base2" >
-    <div class="header" v-show="isLoaded">
-      <span>{{ threadTitle + " / " + data.length + "レス" }}</span>
+    <div class="header">
+      <span>{{ threadTitle + " / " + responseCount + "レス　　" }}</span>
+      <input type="text" v-model="rawUrl">
+      <button v-on:click="getData">表示</button>   
       <span>マスターモード</span>
-      <ToggleButton v-on:click="changeMasterMode" ref="MasterToggleElem"></ToggleButton>
+      <ToggleButton v-on:click="changeMasterMode" ref="MasterToggleElem"></ToggleButton>       
     </div>
     <div v-if="!isLoaded">
-      <div>読み込むスレを指定してください </div>
-      <input type="text" v-model="rawUrl">
-      <button v-on:click="getData">表示</button>    
+      <div>読み込むスレを指定してください </div> 
     </div>
-    <div v-if="isLoaded">
+    <div v-if="isLoaded" class="base">
       <div class="base" v-if="!isMasterMode" >
       <div v-for="info in data" v-bind:class="{'frame': !info.isMaster}" > 
         <div v-bind:class="{'master': info.isMaster}" class="node">
@@ -416,6 +475,11 @@ const windowOpen = () => {
           <span>{{ info.date }}</span>
           <span>{{ info.id }}</span>
           <div class="asciiArt" v-html="info.content"></div>
+          <div v-for="img in info.imageList">
+            <a :href="img" target="_blank" >
+              <img :src="img" :alt="img" loading="lazy"/>               
+            </a>
+          </div>
         </div>
       </div>    
     </div>
@@ -427,7 +491,12 @@ const windowOpen = () => {
               <span>{{ info.name }}</span>
               <span>{{ info.date }}</span>
               <span>{{ info.id }}</span>
-              <div class="asciiArt" v-html="info.content"></div>            
+              <div class="asciiArt" v-html="info.content"></div>  
+              <div v-for="img in info.imageList">
+                <a :href="img" target="_blank" >
+                  <img :src="img" :alt="img" loading="lazy"/>               
+                </a>
+              </div>          
             </div>
             <div class="frameColumn">
               <div v-for="child in info.childMessages" v-bind:class="{'frame': child.isMaster}" >
@@ -438,7 +507,7 @@ const windowOpen = () => {
                   <span>{{ child.id }}</span>
                   <div class="asciiArt" v-html="child.content"></div>
                 </div>
-                <div v-if="!child.isMaster && info.content==''" class="node">
+                <div v-if="!child.isMaster && responseList.has(child.num)" class="node">
                   <span>{{ ">>" + child.num.toString() }}</span>
                   <textarea class="textArea" v-model="child.response"></textarea>
                 </div>
@@ -452,9 +521,10 @@ const windowOpen = () => {
       <div>
         <div>
           <button v-on:click="copyToClipboard">クリップボードにコピー</button>   
-          <button v-on:click="windowOpen">書き込みは元ページから(別窓でを開きます)</button> 
+          <button v-on:click="windowOpen">書き込みは元ページから(別窓で開きます)</button> 
         </div>
-        <textarea class="textArea" v-model="rawMessage"></textarea>
+        <textarea class="textArea asciiArt" v-model="rawMessage"></textarea>
+        <div>ここの内容がクリップボードにコピーされます</div>
         <span ref="refSpanElem"></span>
       </div>
     </div>    
@@ -463,17 +533,92 @@ const windowOpen = () => {
 </template>
 
 <style scoped>
+.loadText {
+  color: white;
+  margin: 0 auto;
+}
+.loaderBase {
+  position: absolute;
+  background-color: skyblue;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+.loader,
+.loader:before,
+.loader:after {
+  background: #ffffff;
+  -webkit-animation: load1 1s infinite ease-in-out;
+  animation: load1 1s infinite ease-in-out;
+  width: 1em;
+  height: 4em;
+}
+.loader {
+  color: #ffffff;
+  text-indent: -9999em;
+  margin: 88px auto;
+  position: relative;
+  font-size: 11px;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+.loader:before,
+.loader:after {
+  position: absolute;
+  top: 0;
+  content: '';
+}
+.loader:before {
+  left: -1.5em;
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+.loader:after {
+  left: 1.5em;
+}
+@-webkit-keyframes load1 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+@keyframes load1 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+
+img {
+  object-fit: cover;
+  height: 100px;
+}
+
 .base {
   background-color: skyblue;
   flex: 1;
-  overflow-y: auto;
-  width: 100%;
+  overflow: auto;
 }
 .base2 {
   display: flex;
   flex-direction: column;  
-  max-height: 100vh;
-  width: 100%;
+  max-height: 95vh;
+    width: fit-content;
 }
 .frame {
   display: flex;
